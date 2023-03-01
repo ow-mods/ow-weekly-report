@@ -157,12 +157,6 @@ public class Program
 			topTen.Add((repo, topTenTW.ElementAt(i).Value, oldIndex));
 		}
 
-		var oldTopTen = new List<(string repo, int change, int oldIndex)>();
-		for (var i = 0; i < topTenLW.Count(); i++)
-		{
-			oldTopTen.Add((topTenLW.ElementAt(i).Key, topTenLW.ElementAt(i).Value, i));
-		}
-
 		var client = new DiscordSocketClient();
 		await client.LoginAsync(Discord.TokenType.Bot, discordToken);
 		await client.StartAsync();
@@ -173,7 +167,7 @@ public class Program
 			var emojiName = new string[] { ":one:", ":two:", ":three:", ":four:", ":five:", ":six:", ":seven:", ":eight:", ":nine:", ":keycap_ten:" };
 
 			var guild = client.GetGuild(929708786027999262);
-			var channel = guild.GetTextChannel(1057602032850186300);
+			var channel = guild.GetTextChannel(933149732077985792);
 			void GenerateFieldValue(IEnumerable<(string repo, int change, int oldIndex)> list, EmbedBuilder eb)
 			{
 				for (var i = 0; i < 10; i++)
@@ -226,18 +220,12 @@ public class Program
 			GenerateFieldValue(topTen, topTenBuilder);
 			embeds.Add(topTenBuilder.Build());
 
-			var oldTopTenBuilder = new EmbedBuilder
-			{
-				Title = "Most Downloads (PREVIOUS WEEK)",
-				Description = "This ranking does not include any mod tagged with `library`.",
-				Color = Color.Orange
-			};
-			GenerateFieldValue(oldTopTen, oldTopTenBuilder);
-			embeds.Add(oldTopTenBuilder.Build());
+			var from = DateTime.Now.Date.AddDays(-7).ToLongDateString();
+			var to = DateTime.Now.ToLongDateString();
 
-			await channel.SendMessageAsync($"Statistics from {DateTime.Now.Date.AddDays(-7).ToLongDateString()} to {DateTime.Now.ToLongDateString()}.", embeds: embeds.ToArray());
+			await channel.SendMessageAsync($"Statistics from {from} to {to}. ({DateTime.Now.ToShortTimeString()})", embeds: embeds.ToArray());
 
-			client.LogoutAsync();
+			await client.LogoutAsync();
 
 			Environment.Exit(0);
 		};
