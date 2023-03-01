@@ -88,7 +88,7 @@ public class Program
 		var downloadCountFile = "";
 		using (var hc = new HttpClient())
 		{
-			downloadCountFile = await hc.GetStringAsync(@"https://raw.githubusercontent.com/ow-mods/ow-mod-download-history/main/download-history.json");
+			downloadCountFile = await hc.GetStringAsync(@"https://ow-mods.github.io/ow-mod-download-history/download-history.json");
 		}
 		DownloadList = JsonSerializer.Deserialize<List<Entry>>(downloadCountFile);
 
