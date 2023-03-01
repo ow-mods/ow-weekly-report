@@ -8,7 +8,7 @@ on:
 jobs:
   update:
     runs-on: windows-latest
-		
+
     steps:
       - name: Checkout this repo
         uses: actions/checkout@v3
@@ -17,5 +17,5 @@ jobs:
       - name: Send messages
         run: |
           cd weekly-report
-	  ./OWWeeklyReport/OWWeeklyReport/bin/Debug/net6.0/OWWeeklyReport.exe BOT_TOKEN
-	  cd ..
+          ./OWWeeklyReport/OWWeeklyReport/bin/Debug/net6.0/OWWeeklyReport.exe BOT_TOKEN
+          cd ..
