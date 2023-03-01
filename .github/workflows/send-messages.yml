@@ -17,5 +17,5 @@ jobs:
       - name: Send messages
         run: |
           cd weekly-report
-          ./OWWeeklyReport/OWWeeklyReport/bin/Debug/net6.0/OWWeeklyReport.exe BOT_TOKEN
+          ./OWWeeklyReport/OWWeeklyReport/bin/Debug/net6.0/OWWeeklyReport.exe ${{ secrets.BOT_TOKEN }}
           cd ..
