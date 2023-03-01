@@ -81,9 +81,7 @@ public class Program
 
 	public async Task MainAsync(string[] args)
 	{
-		//var downloadCountFile = File.ReadAllText(args[0]);
-
-		//var discordToken = args[1];
+		var discordToken = args[0];
 
 		var downloadCountFile = "";
 		using (var hc = new HttpClient())
@@ -161,7 +159,7 @@ public class Program
 		}
 
 		var client = new DiscordSocketClient();
-		await client.LoginAsync(Discord.TokenType.Bot, "MTA4MDIyOTAwNzA3MDYwMTIzNg.Gr03y-.xLihbloMPY6DVgbGGR6FtKx3JxMWzUSlZBclTY");
+		await client.LoginAsync(Discord.TokenType.Bot, discordToken);
 		await client.StartAsync();
 
 		// send message
