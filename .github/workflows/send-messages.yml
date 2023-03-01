@@ -1,0 +1,21 @@
+name: Send messages
+
+on:
+	schedule:
+		- cron : "* * * * 1"
+	workflow_dispatch:
+	
+jobs:
+	update:
+		runs-on: windows-latest
+		
+		steps:
+			- name: Checkout this repo
+					uses: actions/checkout@v3
+					with:
+						path: weekly-report
+			- name: Send messages
+				run: |
+					cd weekly-report
+					./OWWeeklyReport/OWWeeklyReport/bin/Debug/net6.0/OWWeeklyReport.exe BOT_TOKEN
+					cd ..
