@@ -158,6 +158,7 @@ public class Program
 		}
 
 		var client = new DiscordSocketClient();
+		client.Log += Log;
 		await client.LoginAsync(Discord.TokenType.Bot, discordToken);
 		await client.StartAsync();
 
@@ -231,6 +232,12 @@ public class Program
 		};
 
 		await Task.Delay(-1);
+	}
+
+	private Task Log(LogMessage msg)
+	{
+		Console.WriteLine(msg.ToString());
+		return Task.CompletedTask;
 	}
 
 	public static DateTime UnixTimeStampToDateTime(double unixTimeStamp)
