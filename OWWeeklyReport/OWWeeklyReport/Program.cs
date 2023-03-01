@@ -144,7 +144,6 @@ public class Program
 		var topTenLWRepos = topTenLW.Select(x => x.Key).ToList();
 
 		var topTen = new List<(string repo, int change, int oldIndex)>();
-
 		for (var i = 0; i < topTenTW.Count(); i++)
 		{
 			var repo = topTenTW.ElementAt(i).Key;
@@ -156,6 +155,12 @@ public class Program
 			}
 
 			topTen.Add((repo, topTenTW.ElementAt(i).Value, oldIndex));
+		}
+
+		var oldTopTen = new List<(string repo, int change, int oldIndex)>();
+		for (var i = 0; i < topTenLW.Count(); i++)
+		{
+			oldTopTen.Add((topTenLW.ElementAt(i).Key, topTenLW.ElementAt(i).Value, i));
 		}
 
 		var client = new DiscordSocketClient();
@@ -220,6 +225,15 @@ public class Program
 			};
 			GenerateFieldValue(topTen, topTenBuilder);
 			embeds.Add(topTenBuilder.Build());
+
+			var oldTopTenBuilder = new EmbedBuilder
+			{
+				Title = "Most Downloads (PREVIOUS WEEK)",
+				Description = "This ranking does not include any mod tagged with `library`.",
+				Color = Color.Orange
+			};
+			GenerateFieldValue(oldTopTen, oldTopTenBuilder);
+			embeds.Add(oldTopTenBuilder.Build());
 
 			await channel.SendMessageAsync($"Statistics from {DateTime.Now.Date.AddDays(-7).ToLongDateString()} to {DateTime.Now.ToLongDateString()}.", embeds: embeds.ToArray());
 
