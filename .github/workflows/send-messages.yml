@@ -1,9 +1,9 @@
 name: Send messages
 
 on:
-	schedule:
-		- cron : "* * * * 1"
-	workflow_dispatch:
+  schedule:
+    - cron: "* * * * 1"
+  workflow_dispatch:
 	
 jobs:
 	update:
