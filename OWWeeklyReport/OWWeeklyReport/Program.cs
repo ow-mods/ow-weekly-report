@@ -39,6 +39,13 @@ public class Program
 				continue;
 			}
 
+			var updatesBeforeTimeSpan = entry.Updates.Any(x => UnixTimeStampToDateTime(x.UnixTimestamp) < fromTime);
+
+			if (!updatesBeforeTimeSpan)
+			{
+				numberOfNewMods++;
+			}
+
 			var ordered = onlyInTimeSpan.OrderByDescending(x => x.UnixTimestamp).ToList();
 
 			// filter outliers
@@ -83,11 +90,6 @@ public class Program
 
 			var newest = newOrdered.First();
 			var oldest = newOrdered.Last();
-
-			if (UnixTimeStampToDateTime(oldest.UnixTimestamp).DayOfWeek != fromTime.DayOfWeek && oldest.DownloadCount == 0)
-			{
-				numberOfNewMods++;
-			}
 
 			downloadChanges.Add(entry.Repo, newest.DownloadCount - oldest.DownloadCount);
 		}
