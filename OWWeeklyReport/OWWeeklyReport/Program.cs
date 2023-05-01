@@ -184,7 +184,7 @@ public class Program
 			var emojiName = new string[] { ":one:", ":two:", ":three:", ":four:", ":five:", ":six:", ":seven:", ":eight:", ":nine:", ":keycap_ten:" };
 
 			var guild = client.GetGuild(929708786027999262);
-			var channel = guild.GetTextChannel(1057602032850186300);
+			var channel = guild.GetTextChannel(933149732077985792);
 			void GenerateFieldValue(IEnumerable<(string repo, int change, int oldIndex)> list, EmbedBuilder eb)
 			{
 				for (var i = 0; i < 10; i++)
