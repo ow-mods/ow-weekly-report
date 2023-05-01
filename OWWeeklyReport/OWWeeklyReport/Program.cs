@@ -42,26 +42,35 @@ public class Program
 			var ordered = onlyInTimeSpan.OrderByDescending(x => x.UnixTimestamp).ToList();
 
 			// filter outliers
+
 			List<DownloadCountUpdate> newOrdered = new();
-			for (var i = 0; i < ordered.Count; i++)
+
+			var orderedByDownloadCount = ordered.OrderBy(x => x.DownloadCount).ToList();
+
+			float Quartile(List<int> orderedData, int whichQuartile)
 			{
-				var currentValue = ordered[i];
+				var k = (int)MathF.Truncate(whichQuartile * (orderedData.Count + 1) / 4);
 
-				if (i == ordered.Count - 1)
-				{
-					newOrdered.Add(currentValue);
-					continue;
-				}
+				var alpha = (whichQuartile * (orderedData.Count + 1) / 4) - MathF.Truncate(whichQuartile * (orderedData.Count + 1) / 4);
 
-				var nextValue = ordered[i + 1];
+				// indexes have had 1 subtracted from original formula because computers
+				return orderedData[k - 1] + (alpha * (orderedData[k] - orderedData[k - 1]));
+			}
 
-				if (currentValue.DownloadCount - nextValue.DownloadCount > 100)
+			var downloadCounts = orderedByDownloadCount.Select(x => x.DownloadCount).ToList();
+			var q3 = Quartile(downloadCounts, 3);
+			var q1 = Quartile(downloadCounts, 1);
+			var interQuartileRange = q3 - q1;
+			var upperFence = q3 + (1.5f * interQuartileRange);
+			var lowerFence = q1 - (1.5f * interQuartileRange);
+
+			bool IsOutlier(int x) => x < lowerFence || x > upperFence;
+
+			foreach (var item in ordered)
+			{
+				if (!IsOutlier(item.DownloadCount))
 				{
-					i += 2;
-				}
-				else
-				{
-					newOrdered.Add(currentValue);
+					newOrdered.Add(item);
 				}
 			}
 
@@ -168,7 +177,7 @@ public class Program
 			var emojiName = new string[] { ":one:", ":two:", ":three:", ":four:", ":five:", ":six:", ":seven:", ":eight:", ":nine:", ":keycap_ten:" };
 
 			var guild = client.GetGuild(929708786027999262);
-			var channel = guild.GetTextChannel(933149732077985792);
+			var channel = guild.GetTextChannel(1057602032850186300);
 			void GenerateFieldValue(IEnumerable<(string repo, int change, int oldIndex)> list, EmbedBuilder eb)
 			{
 				for (var i = 0; i < 10; i++)
