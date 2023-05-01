@@ -57,21 +57,28 @@ public class Program
 				return orderedData[k - 1] + (alpha * (orderedData[k] - orderedData[k - 1]));
 			}
 
-			var downloadCounts = orderedByDownloadCount.Select(x => x.DownloadCount).ToList();
-			var q3 = Quartile(downloadCounts, 3);
-			var q1 = Quartile(downloadCounts, 1);
-			var interQuartileRange = q3 - q1;
-			var upperFence = q3 + (1.5f * interQuartileRange);
-			var lowerFence = q1 - (1.5f * interQuartileRange);
-
-			bool IsOutlier(int x) => x < lowerFence || x > upperFence;
-
-			foreach (var item in ordered)
+			if (orderedByDownloadCount.Count >= 4)
 			{
-				if (!IsOutlier(item.DownloadCount))
+				var downloadCounts = orderedByDownloadCount.Select(x => x.DownloadCount).ToList();
+				var q3 = Quartile(downloadCounts, 3);
+				var q1 = Quartile(downloadCounts, 1);
+				var interQuartileRange = q3 - q1;
+				var upperFence = q3 + (1.5f * interQuartileRange);
+				var lowerFence = q1 - (1.5f * interQuartileRange);
+
+				bool IsOutlier(int x) => x < lowerFence || x > upperFence;
+
+				foreach (var item in ordered)
 				{
-					newOrdered.Add(item);
+					if (!IsOutlier(item.DownloadCount))
+					{
+						newOrdered.Add(item);
+					}
 				}
+			}
+			else
+			{
+				newOrdered = ordered;
 			}
 
 			var newest = newOrdered.First();
