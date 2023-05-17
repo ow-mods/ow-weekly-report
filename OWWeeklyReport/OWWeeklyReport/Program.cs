@@ -1,8 +1,5 @@
-﻿using Discord;
-using Discord.WebSocket;
-using System;
-using System.Diagnostics;
-using System.Net;
+﻿using CSharpDiscordWebhook.NET.Discord;
+using System.Drawing;
 using System.Text.Json;
 
 namespace OWWeeklyReport;
@@ -97,15 +94,41 @@ public class Program
 		return (numberOfNewMods, downloadChanges);
 	}
 
-	public async Task MainAsync(string[] args)
+	public static async Task<string> DownloadFileAsync(string uri)
 	{
-		var discordToken = args[0];
+		Console.WriteLine($"Downloading {uri}");
+		var result = "";
 
-		var downloadCountFile = "";
 		using (var hc = new HttpClient())
 		{
-			downloadCountFile = await hc.GetStringAsync(@"https://ow-mods.github.io/ow-mod-download-history/download-history.json");
+			var success = false;
+			var failCount = 0;
+			while (!success)
+			{
+				try
+				{
+					result = await hc.GetStringAsync(uri);
+					success = true;
+				}
+				catch
+				{
+					failCount++;
+					Console.WriteLine($"- Attemp {failCount} failed.");
+
+					if (failCount >= 5)
+					{
+						throw;
+					}
+				}
+			}
 		}
+
+		return result;
+	}
+
+	public async Task MainAsync(string[] args)
+	{
+		var downloadCountFile = await DownloadFileAsync(@"https://ow-mods.github.io/ow-mod-download-history/download-history.json");
 		DownloadList = JsonSerializer.Deserialize<List<Entry>>(downloadCountFile);
 
 		if (DownloadList == null)
@@ -113,7 +136,9 @@ public class Program
 			return;
 		}
 
+		Console.WriteLine("Analyze this weeks mods...");
 		(var numberOfNewMods, var downloadChanges) = AnalyzeMods(DateTime.Now.AddDays(-7), DateTime.Now);
+		Console.WriteLine("Analyze last weeks mods...");
 		(var numberOfNewModsLastWeek, var downloadChangesLastWeek) = AnalyzeMods(DateTime.Now.AddDays(-14), DateTime.Now.AddDays(-7));
 
 		var modsToIgnore = new string[]
@@ -123,11 +148,7 @@ public class Program
 			"https://github.com/amazingalek/owml"
 		};
 
-		var database = "";
-		using (var hc = new HttpClient())
-		{
-			database = await hc.GetStringAsync(@"https://ow-mods.github.io/ow-mod-db/database.json");
-		}
+		var database = await DownloadFileAsync(@"https://ow-mods.github.io/ow-mod-db/database.json");
 		var databaseJson = JsonSerializer.Deserialize<Database>(database);
 
 		bool IsValidMod(string repo)
@@ -153,9 +174,11 @@ public class Program
 			return true;
 		}
 
+		Console.WriteLine("Selecting top 10 of this weeks mods");
 		var orderedTW = downloadChanges.Where(x => IsValidMod(x.Key)).OrderByDescending(x => x.Value);
 		var topTenTW = orderedTW.Take(NUMBER_OF_MODS);
 
+		Console.WriteLine("Selecting top 10 of last weeks mods");
 		var orderedLW = downloadChangesLastWeek.Where(x => IsValidMod(x.Key)).OrderByDescending(x => x.Value);
 		var topTenLW = orderedLW.Take(NUMBER_OF_MODS);
 
@@ -175,87 +198,82 @@ public class Program
 			topTen.Add((repo, topTenTW.ElementAt(i).Value, oldIndex));
 		}
 
-		var client = new DiscordSocketClient();
-		client.Log += Log;
-		await client.LoginAsync(Discord.TokenType.Bot, discordToken);
-		await client.StartAsync();
+		Console.WriteLine("Setting up webhook...");
+		var webhook = args[0];
 
-		// send message
-		client.Ready += async () =>
+		var hook = new DiscordWebhook
 		{
-			var emojiName = new string[] { ":one:", ":two:", ":three:", ":four:", ":five:", ":six:", ":seven:", ":eight:", ":nine:", ":keycap_ten:" };
-
-			var guild = client.GetGuild(929708786027999262);
-			var channel = guild.GetTextChannel(933149732077985792);
-			void GenerateFieldValue(IEnumerable<(string repo, int change, int oldIndex)> list, EmbedBuilder eb)
-			{
-				for (var i = 0; i < 10; i++)
-				{
-					var repo = list.ElementAt(i).repo;
-					var oldIndex = list.ElementAt(i).oldIndex;
-					var modDBEntry = databaseJson.releases.First(y => y.repo == repo);
-
-					var slug = modDBEntry.slug;
-					var modname = modDBEntry.name;
-					var change = list.ElementAt(i).change;
-					var uniqueName = modDBEntry.uniqueName;
-
-					var rankingEmoji = "";
-				
-					if (oldIndex == i)
-					{
-						rankingEmoji = "➖";
-					}
-					else if (oldIndex < i && oldIndex != -1)
-					{
-						rankingEmoji = "<:red_down:1080545078197637240>";
-					}
-					else
-					{
-						rankingEmoji = "<:green_up:1080545075005755543>";
-					}
-
-					eb.AddField($"{rankingEmoji} {emojiName[i]} {modname}", $"+{change} downloads [Mod Page](https://outerwildsmods.com/mods/{slug}/)");
-				}
-			}
-
-			List<Embed> embeds = new();
-
-			var otherInfo = new EmbedBuilder
-			{
-				Title = "General Statistics",
-				Color = Color.Orange,
-				Description = $"<:newhere:1079777473585229875> New Mods : {numberOfNewMods}{Environment.NewLine}" +
-				$"📋 Total Mods : {databaseJson.releases.GroupBy(x => x.uniqueName).Select(x => x.First()).Count()}"
-			};
-			embeds.Add(otherInfo.Build());
-
-			var topTenBuilder = new EmbedBuilder
-			{
-				Title = "Most Downloads",
-				Description = "This ranking does not include any mod tagged with `library`.",
-				Color = Color.Orange
-			};
-			GenerateFieldValue(topTen, topTenBuilder);
-			embeds.Add(topTenBuilder.Build());
-
-			var from = DateTime.Now.Date.AddDays(-7).ToLongDateString();
-			var to = DateTime.Now.ToLongDateString();
-
-			await channel.SendMessageAsync($"Statistics from {from} to {to}. ({DateTime.Now.ToShortTimeString()})", embeds: embeds.ToArray());
-
-			await client.LogoutAsync();
-
-			Environment.Exit(0);
+			Uri = new Uri(webhook)
 		};
 
-		await Task.Delay(-1);
-	}
+		var message = new DiscordMessage();
 
-	private Task Log(LogMessage msg)
-	{
-		Console.WriteLine(msg.ToString());
-		return Task.CompletedTask;
+		var emojiName = new string[] { ":one:", ":two:", ":three:", ":four:", ":five:", ":six:", ":seven:", ":eight:", ":nine:", ":keycap_ten:" };
+
+		void GenerateFieldValue(IEnumerable<(string repo, int change, int oldIndex)> list, DiscordEmbed eb)
+		{
+			for (var i = 0; i < 10; i++)
+			{
+				var repo = list.ElementAt(i).repo;
+				var oldIndex = list.ElementAt(i).oldIndex;
+				var modDBEntry = databaseJson.releases.First(y => y.repo == repo);
+
+				var slug = modDBEntry.slug;
+				var modname = modDBEntry.name;
+				var change = list.ElementAt(i).change;
+				var uniqueName = modDBEntry.uniqueName;
+
+				var rankingEmoji = "";
+
+				if (oldIndex == i)
+				{
+					rankingEmoji = "➖";
+				}
+				else if (oldIndex < i && oldIndex != -1)
+				{
+					rankingEmoji = "<:red_down:1080545078197637240>";
+				}
+				else
+				{
+					rankingEmoji = "<:green_up:1080545075005755543>";
+				}
+
+				eb.Fields.Add(new EmbedField()
+				{
+					Name = $"{rankingEmoji} {emojiName[i]} {modname}",
+					Value = $"+{change} downloads [Mod Page](https://outerwildsmods.com/mods/{slug}/)"
+				});
+			}
+		}
+
+		var otherInfoEmbed = new DiscordEmbed
+		{
+			Title = "General Statistics",
+			Color = new DiscordColor(Color.Orange),
+			Description = $"<:newhere:1079777473585229875> New Mods : {numberOfNewMods}{Environment.NewLine}" +
+				$"📋 Total Mods : {databaseJson.releases.GroupBy(x => x.uniqueName).Select(x => x.First()).Count()}"
+		};
+
+		message.Embeds.Add(otherInfoEmbed);
+
+		var topTenEmbed = new DiscordEmbed
+		{
+			Title = "Most Downloads",
+			Description = "This ranking does not include any mod tagged with `library`.",
+			Color = new DiscordColor(Color.Orange)
+		};
+
+		GenerateFieldValue(topTen, topTenEmbed);
+
+		message.Embeds.Add(topTenEmbed);
+
+		var from = DateTime.Now.Date.AddDays(-7).ToLongDateString();
+		var to = DateTime.Now.ToLongDateString();
+
+		message.Content = $"Statistics from {from} to {to}. ({DateTime.Now.ToShortTimeString()})";
+
+		Console.WriteLine("Sending webhook message...");
+		await hook.SendAsync(message);
 	}
 
 	public static DateTime UnixTimeStampToDateTime(double unixTimeStamp)
@@ -264,16 +282,4 @@ public class Program
 		dateTime = dateTime.AddSeconds(unixTimeStamp).ToLocalTime();
 		return dateTime;
 	}
-}
-
-public class Entry
-{
-	public string Repo { get; set; }
-	public DownloadCountUpdate[] Updates { get; set; }
-}
-
-public class DownloadCountUpdate
-{
-	public long UnixTimestamp { get; set; }
-	public int DownloadCount { get; set; }
 }

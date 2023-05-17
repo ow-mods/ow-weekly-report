@@ -394,3 +394,4 @@ FodyWeavers.xsd
 
 # JetBrains Rider
 *.sln.iml
+OWWeeklyReport/OWWeeklyReport/Properties/launchSettings.json
