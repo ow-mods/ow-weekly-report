@@ -15,4 +15,4 @@ jobs:
         
       - name: Send messages
         run: |
-          ./OWWeeklyReport/OWWeeklyReport/bin/Debug/net6.0/OWWeeklyReport.exe ${{ secrets.BOT_TOKEN }}
+          ./OWWeeklyReport/OWWeeklyReport/bin/Debug/net6.0/OWWeeklyReport.exe ${{ secrets.WEBHOOK }}
