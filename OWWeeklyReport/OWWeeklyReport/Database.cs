@@ -13,4 +13,5 @@ public class Release
 	public int downloadCount { get; set; }
 	public string slug { get; set; }
 	public string[] tags { get; set; }
+	public int weeklyInstallCount { get; set; }
 }
