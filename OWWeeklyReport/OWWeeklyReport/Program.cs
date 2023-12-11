@@ -142,7 +142,7 @@ public class Program
 		{
 			Title = "General Statistics",
 			Color = new DiscordColor(Color.Orange),
-			Description = $"<:newhere:1079777473585229875> New Mods : {numberOfNewMods}{Environment.NewLine}" +
+			Description = $"<:newhere:1182397109006254120> New Mods : {numberOfNewMods}{Environment.NewLine}" +
 				$"📋 Total Mods : {databaseJson.releases.GroupBy(x => x.uniqueName).Select(x => x.First()).Count()}"
 		};
 
