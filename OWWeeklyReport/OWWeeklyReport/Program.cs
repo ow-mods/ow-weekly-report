@@ -49,20 +49,16 @@ public class Program
 		var databaseJson = JsonSerializer.Deserialize<Database>(database);
 
 		var topTenReleases = databaseJson.releases.OrderByDescending(x => x.weeklyInstallCount).Take(10);
-
-		foreach (var item in topTenReleases)
-		{
-			Console.WriteLine($"- {item.uniqueName} - {item.weeklyInstallCount}");
-		}
-
 		var topTen = new List<(string uniqueName, int change, int oldIndex)>();
-		var modCount = databaseJson.releases.Length;
-		var numberOfNewMods = 0;
+		var newMods = new List<string>();
+
+		var timeOfLastPost = DateTime.Now.ToUniversalTime().Date.AddDays(-7);
+
 		if (File.Exists("previousWeek.json"))
 		{
 			var previous = JsonSerializer.Deserialize<PreviousWeek>(File.ReadAllText("previousWeek.json"));
 
-			numberOfNewMods = modCount - previous.previousModCount;
+			newMods = databaseJson.releases.Where(x => x.firstReleaseDate >= timeOfLastPost).Select(x => x.uniqueName).ToList();
 
 			foreach (var item in topTenReleases)
 			{
@@ -79,13 +75,10 @@ public class Program
 			{
 				topTen.Add((item.uniqueName, item.weeklyInstallCount, -1));
 			}
-
-			numberOfNewMods = modCount;
 		}
 
 		var thisWeekInfo = new PreviousWeek
 		{
-			previousModCount = modCount,
 			previousTopTen = topTenReleases.Select(x => x.uniqueName).ToArray()
 		};
 
@@ -135,15 +128,39 @@ public class Program
 					Name = $"{rankingEmoji} {emojiName[i]} {modname}",
 					Value = $"+{change} installs [Mod Page](https://outerwildsmods.com/mods/{slug}/)"
 				});
+
+				Console.WriteLine($"{modname} +{change}");
 			}
 		}
+
+		var desc = "";
+
+		if (newMods == null || newMods.Count == 0)
+		{
+			desc = $"No new mods this week :({Environment.NewLine}";
+		}
+		else
+		{
+			desc = $"<:newhere:1182397109006254120> New Mods:{Environment.NewLine}";
+			foreach (var mod in newMods)
+			{
+				var modDBEntry = databaseJson.releases.First(y => y.uniqueName == mod);
+				var slug = modDBEntry.slug;
+				var modname = modDBEntry.name;
+
+				desc += $" - {modname} [Mod Page](https://outerwildsmods.com/mods/{slug}/){Environment.NewLine}";
+			}
+		}
+
+		desc += $"📋 Total Mods : {databaseJson.releases.GroupBy(x => x.uniqueName).Select(x => x.First()).Count()}";
+
+		Console.WriteLine(desc);
 
 		var otherInfoEmbed = new DiscordEmbed
 		{
 			Title = "General Statistics",
 			Color = new DiscordColor(Color.Orange),
-			Description = $"<:newhere:1182397109006254120> New Mods : {numberOfNewMods}{Environment.NewLine}" +
-				$"📋 Total Mods : {databaseJson.releases.GroupBy(x => x.uniqueName).Select(x => x.First()).Count()}"
+			Description = desc
 		};
 
 		message.Embeds.Add(otherInfoEmbed);
@@ -159,19 +176,12 @@ public class Program
 
 		message.Embeds.Add(topTenEmbed);
 
-		var from = DateTime.Now.ToUniversalTime().Date.AddDays(-7).ToLongDateString();
+		var from = timeOfLastPost.ToLongDateString();
 		var to = DateTime.Now.ToUniversalTime().ToLongDateString();
 
 		message.Content = $"Statistics from {from} to {to}. ({DateTime.Now.ToUniversalTime().ToShortTimeString()})";
 
 		Console.WriteLine("Sending webhook message...");
 		await hook.SendAsync(message);
-	}
-
-	public static DateTime UnixTimeStampToDateTime(double unixTimeStamp)
-	{
-		var dateTime = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc);
-		dateTime = dateTime.AddSeconds(unixTimeStamp).ToLocalTime();
-		return dateTime;
 	}
 }
