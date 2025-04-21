@@ -137,7 +137,7 @@ public class Program
 
 		if (newMods == null || newMods.Count == 0)
 		{
-			desc = $"No new mods this week :({Environment.NewLine}";
+			desc = $"No new mods this week ::({Environment.NewLine}";
 		}
 		else
 		{
