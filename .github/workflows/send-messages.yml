@@ -12,6 +12,11 @@ jobs:
     steps:
       - name: Checkout this repo
         uses: actions/checkout@v3
+
+      - name: Setup .NET 6 runtime
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '6.0.x'
         
       - name: Send messages
         run: |
